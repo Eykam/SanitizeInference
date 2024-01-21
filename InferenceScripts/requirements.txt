@@ -1,0 +1,5 @@
+faster-whisper
+openai-whisper
+sagemaker
+boto3
+alt-profanity-check

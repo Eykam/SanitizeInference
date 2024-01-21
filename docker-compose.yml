@@ -1,0 +1,65 @@
+version: "3.9"
+services:
+  censor-backend:
+    image: censor
+    container_name: censor-backend-container
+    networks:
+      - sanitize-app
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    expose:
+      - 8800
+    volumes:
+      - ./uploads:/app/uploads
+      - ./model:/root/.cache/huggingface/hub/
+      - ./model/v3/:/root/.cache/whisper/
+    stdin_open: true # docker run -i
+    tty: true # docker run -t
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+  # censor-frontend:
+  #   image: censor-frontend-image
+  #   container_name: censor-frontend-container
+  #   networks:
+  #     - sanitize-app
+  #   build:
+  #     context: ./
+  #     dockerfile: ./frontend/Dockerfile
+  #   expose:
+  #     - 3000
+  #   ports:
+  #     - 192.168.1.171:3000:3000
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./conf.d:/etc/nginx/conf.d
+    ports:
+      - 80:80
+    networks:
+      - sanitize-app
+    deploy:
+      restart_policy:
+        condition: always
+
+  redis:
+    image: redis/redis-stack:latest
+    container_name: sanitize-redis-container
+    expose:
+      - 6379
+    ports:
+      - 8001:8001
+    networks:
+      - sanitize-app
+    volumes:
+      - ./redis/data:/data
+      - ./redis/redis.conf:/redis-stack.conf
+
+networks:
+  sanitize-app:
+    driver: bridge
